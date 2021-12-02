@@ -1,3 +1,4 @@
+#Python Modules
 import tkinter as tk
 import winsound
 import time
@@ -13,13 +14,17 @@ class app1(tk.Tk):
         super().__init__()
         self.title("app1")
         self.geometry("600x500")
-       # self.iconbitmap('Alarm_Clock.ico')
+        #self.iconbitmap('Alarm_Clock.ico')
         self.time_label=tk.StringVar()
         self.date_label=tk.StringVar()
         self.hour_box=tk.StringVar()
         self.minute_box=tk.StringVar()
         self.second_box=tk.StringVar()
-
+        self.hourvalue = tk.StringVar()
+        self.minutevalue = tk.StringVar()
+        self.secondvalue = tk.StringVar()
+        self.start_alarm_time = -1
+        self.end_alarm_time = -1
         
 
 #Create Widgets
@@ -30,10 +35,10 @@ class app1(tk.Tk):
         self.hourlabel = tk.Label(text="Hour", font=Small)
         self.minutelabel = tk.Label(text="Minute", font=Small)
         self.secondlabel = tk.Label(text="Seconds", font=Small)
-        self.hour_box = tk.Spinbox(self,from_= 00, to = 23, width = 5)
-        self.minute_box = tk.Spinbox(self,from_= 00, to = 59, width = 5)
-        self.second_box = tk.Spinbox(self,from_= 00, to = 59, width = 5)
-        self.submit = tk.Button(self, text="Submit", command=self.alarm_clock)
+        self.hour_box = tk.Spinbox(self,from_= 00, to = 23, width = 5, textvariable = self.hourvalue)
+        self.minute_box = tk.Spinbox(self,from_= 00, to = 59, width = 5, textvariable = self.minutevalue)
+        self.second_box = tk.Spinbox(self,from_= 00, to = 59, width = 5, textvariable = self.secondvalue)
+        self.submit = tk.Button(self, text="Submit", command=self.alarm_values)
         self.stop_alarm = tk.Button(self, text="Alarm off", command=self.alarm_off)
         self.quit = tk.Button(self, text="Quit", command=self.close)
 
@@ -54,42 +59,64 @@ class app1(tk.Tk):
         self.quit.grid(padx=20, pady=20, row=5, column=3)
 
         
-#Update time label & Date label
-    def update_time(self):
-            time_seconds = time.localtime()
-            date_str = time.strftime("%d-%m-%Y", time_seconds)
-            time_str = time.strftime("%H:%M:%S", time_seconds)
+#Clock feature
+    def update_time(self):#Update time label & Date label with current time
+            
+            self.time_seconds = time.localtime()
+            date_str = time.strftime("%d-%m-%Y", self.time_seconds)
+            time_str = time.strftime("%H:%M:%S", self.time_seconds)
             
 
             self.time_label.set(time_str)
             self.date_label.set(date_str)
 
+
             
 #Alarm Clock feature
-    def alarm_clock(self):
-        time_seconds = time.localtime()
-        while True:
-            H = self.hour_box.get()
-            M = self.minute_box.get()
-            S = self.second_box.get()
-
-            alarm_time = time.strftime("%H:%M:%S", time_seconds)
-
-    def update_alarm(self):
-        time_seconds = time.localtime()
-        time_str = time.strftime("%H:%M:%S", time_seconds)
-        alarm_time = time.strftime("%H:%M:%S", time_seconds)
-        while True:
-            if alarm_time == time_str:
-                winsound.Beep()
-
-    def alarm_off():
-       winsound.stop()
-       alarm_time = ""
+    def alarm_values(self):#Obtains spinbox values for alarm
         
-    def close(self):
+        # Values from the Spinboxes are taken and stored to be used in self.start_alarm_time .
+        H = self.hour_box.get()
+        M = self.minute_box.get()
+        S = self.second_box.get()
+
+        # self.start_alarm_time is turned into seconds using the fstring with date & time.
+        # The alarm will sound between self.alarm_start_time and self.end-alarm_time .
+        # The self.end_alarm_time is 30 seconds after the self.alarm_start-time .
+        self.start_alarm_time = time.mktime(time.strptime(f"{self.time_seconds.tm_year} {self.time_seconds.tm_mon} {self.time_seconds.tm_mday} {H} {M} {S}", "%Y %m %d %H %M %S"))
+        self.end_alarm_time = self.start_alarm_time + 30 
+
+
+
+    def alarm_time_up(self):# when the alarm time matches the current time, alarm function is triggered
+        
+        # time_seconds is turned into seconds using time.mktime .
+        # The IF statement checks the self.start_alarm_time seconds against the time_seconds  .
+        # If the IF stement is true, self.alarm_sound is called till self.start_alarm_time equals self.end_alarm_time .
+        time_seconds = time.mktime(self.time_seconds)
+        #print(self.start_alarm_time, self.end_alarm_time, time_seconds)
+        if time_seconds >= self.start_alarm_time and time_seconds <= self.end_alarm_time:
+            self.start_alarm_time += 2
+            #print("Trigger alarm")
+            self.alarm_sound()
+
+
+    def alarm_sound(self):#Triggering the alarm sound
+            #print("Alarm sound")
+            winsound.Beep(440, 500)
+
+    def alarm_off(self):#Turns off alarm sound and resets spinboxes
+       #
+       self.start_alarm_time = 0
+       self.end_alarm_time = 0
+       self.hourvalue.set(value = "0")
+       self.minutevalue.set(value = "0")
+       self.secondvalue.set(value = "0")
+
+#Program exit
+    def close(self):#Closes the program down
         self.destroy()
-        self.close()
+
 
 
 
@@ -106,5 +133,7 @@ while True: #calls update_time function and loops it
     app.update_time()
     app.update_idletasks()
     app.update()
+    app.alarm_time_up()
     time.sleep(0.1)
+
 
